@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "window-basic-main.hpp"
 #include "volume-control.hpp"
 #include "qt-wrappers.hpp"
