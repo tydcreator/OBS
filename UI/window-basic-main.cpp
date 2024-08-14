@@ -1055,8 +1055,7 @@ static void LogFilter(obs_source_t *, obs_source_t *filter, void *v_val)
 	for (int i = 0; i < val; i++)
 		indent += "    ";
 
-	blog(LOG_INFO, "%s- filter: '%s' (%s) %s", indent.c_str(), name, id,
-	     enabled);
+	blog(LOG_INFO, "%s- filter: '%s' (%s) %s", indent.c_str(), name, id, enabled);
 }
 
 static bool LogSceneItem(obs_scene_t *, obs_sceneitem_t *item, void *v_val)
@@ -1071,8 +1070,7 @@ static bool LogSceneItem(obs_scene_t *, obs_sceneitem_t *item, void *v_val)
 	for (int i = 0; i < indent_count; i++)
 		indent += "    ";
 
-	blog(LOG_INFO, "%s- source: '%s' (%s) %s", indent.c_str(), name, id,
-	     enabled);
+	blog(LOG_INFO, "%s- source: '%s' (%s) %s", indent.c_str(), name, id, enabled);
 
 	obs_monitoring_type monitoring_type = obs_source_get_monitoring_type(source);
 
