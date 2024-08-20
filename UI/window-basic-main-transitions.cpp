@@ -89,7 +89,7 @@ void OBSBasic::AddQuickTransitionHotkey(QuickTransition *qt)
 
 	auto quickTransition = [](void *data, obs_hotkey_id, obs_hotkey_t *, bool pressed) {
 		int id = (int)(uintptr_t)data;
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+		OBSBasic *main = OBSBasic::Get();
 
 		if (pressed)
 			QMetaObject::invokeMethod(main, "TriggerQuickTransition", Qt::QueuedConnection, Q_ARG(int, id));
@@ -1056,7 +1056,7 @@ QMenu *OBSBasic::CreateVisibilityTransitionMenu(bool visible)
 	duration->setValue(curDuration);
 
 	auto setTransition = [this](QAction *action, bool visible) {
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+		OBSBasic *main = OBSBasic::Get();
 
 		QString id = action->property("transition_id").toString();
 		OBSSceneItem sceneItem = main->GetCurrentSceneItem();
@@ -1105,7 +1105,7 @@ QMenu *OBSBasic::CreateVisibilityTransitionMenu(bool visible)
 						undo_redo, undo_redo, undo_data, redo_data);
 	};
 	auto setDuration = [visible](int duration) {
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+		OBSBasic *main = OBSBasic::Get();
 
 		OBSSceneItem item = main->GetCurrentSceneItem();
 		obs_sceneitem_set_transition_duration(item, visible, duration);
@@ -1141,7 +1141,7 @@ QMenu *OBSBasic::CreateVisibilityTransitionMenu(bool visible)
 	}
 
 	auto copyTransition = [this](QAction *, bool visible) {
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+		OBSBasic *main = OBSBasic::Get();
 		OBSSceneItem item = main->GetCurrentSceneItem();
 		obs_source_t *tr = obs_sceneitem_get_transition(item, visible);
 		int trDur = obs_sceneitem_get_transition_duration(item, visible);
@@ -1154,7 +1154,7 @@ QMenu *OBSBasic::CreateVisibilityTransitionMenu(bool visible)
 	connect(action, &QAction::triggered, std::bind(copyTransition, action, visible));
 
 	auto pasteTransition = [this](QAction *, bool show) {
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+		OBSBasic *main = OBSBasic::Get();
 		OBSSource tr = OBSGetStrongRef(main->copySourceTransition);
 		int trDuration = main->copySourceTransitionDuration;
 		if (!tr)
