@@ -331,20 +331,9 @@ private:
 	QPointer<QAction> showHide;
 	QPointer<QAction> exit;
 	QPointer<QMenu> trayMenu;
-	QPointer<QMenu> previewProjector;
-	QPointer<QMenu> studioProgramProjector;
-	QPointer<QMenu> previewProjectorSource;
-	QPointer<QMenu> previewProjectorMain;
-	QPointer<QMenu> sceneProjectorMenu;
-	QPointer<QMenu> sourceProjector;
-	QPointer<QMenu> scaleFilteringMenu;
-	QPointer<QMenu> blendingMethodMenu;
-	QPointer<QMenu> blendingModeMenu;
-	QPointer<QMenu> colorMenu;
-	QPointer<QWidgetAction> colorWidgetAction;
-	QPointer<ColorSelect> colorSelect;
-	QPointer<QMenu> deinterlaceMenu;
-	QPointer<QMenu> perSceneTransitionMenu;
+	QScopedPointer<QMenu> previewProjector;
+	QScopedPointer<QMenu> studioProgramProjector;
+	QScopedPointer<QMenu> multiviewMenu;
 	QPointer<QObject> shortcutFilter;
 	QPointer<QAction> renameScene;
 	QPointer<QAction> renameSource;
@@ -360,8 +349,6 @@ private:
 	std::optional<std::pair<uint32_t, uint32_t>> lastOutputResolution;
 
 	void OnEvent(enum obs_frontend_event event);
-
-	void UpdateMultiviewProjectorMenu();
 
 	void DrawBackdrop(float cx, float cy);
 
@@ -781,14 +768,6 @@ private slots:
 	void TransitionFullyStopped();
 	void TriggerQuickTransition(int id);
 
-	void SetDeinterlacingMode();
-	void SetDeinterlacingOrder();
-
-	void SetScaleFilter();
-
-	void SetBlendingMethod();
-	void SetBlendingMode();
-
 	void IconActivated(QSystemTrayIcon::ActivationReason reason);
 	void SetShowing(bool showing);
 
@@ -818,7 +797,9 @@ private slots:
 
 	void PreviewScalingModeChanged(int value);
 
-	void ColorChange();
+	void ColorButtonClicked(QPushButton *button, int preset);
+	void CustomColorSelected();
+	void ClearColors();
 
 	SourceTreeItem *GetItemWidgetFromSceneItem(obs_sceneitem_t *sceneItem);
 
@@ -863,6 +844,8 @@ private slots:
 	void UpdateVirtualCamConfig(const VCamConfig &config);
 	void RestartVirtualCam(const VCamConfig &config);
 	void RestartingVirtualCam();
+
+	void on_viewMenu_aboutToShow();
 
 private:
 	/* OBS Callbacks */
@@ -973,13 +956,11 @@ public:
 		}
 	}
 
-	QMenu *AddDeinterlacingMenu(QMenu *menu, obs_source_t *source);
-	QMenu *AddScaleFilteringMenu(QMenu *menu, obs_sceneitem_t *item);
-	QMenu *AddBlendingMethodMenu(QMenu *menu, obs_sceneitem_t *item);
-	QMenu *AddBlendingModeMenu(QMenu *menu, obs_sceneitem_t *item);
-	QMenu *AddBackgroundColorMenu(QMenu *menu, QWidgetAction *widgetAction,
-				      ColorSelect *select,
-				      obs_sceneitem_t *item);
+	QMenu *CreateDeinterlacingMenu(obs_source_t *source);
+	QMenu *CreateScaleFilteringMenu(obs_sceneitem_t *item);
+	QMenu *CreateBlendingMethodMenu(obs_sceneitem_t *item);
+	QMenu *CreateBlendingModeMenu(obs_sceneitem_t *item);
+	QMenu *CreateBackgroundColorMenu(obs_sceneitem_t *item);
 	void CreateSourcePopupMenu(int idx, bool preview);
 
 	void UpdateTitleBar();
@@ -1009,15 +990,19 @@ public:
 
 	static QList<QString> GetProjectorMenuMonitorsFormatted();
 	template<typename Receiver, typename... Args>
-	static void AddProjectorMenuMonitors(QMenu *parent, Receiver *target,
-					     void (Receiver::*slot)(Args...))
+	static QMenu *CreateProjectorMenu(const QString &name, Receiver *target,
+					  void (Receiver::*slot)(Args...))
 	{
+		QMenu *menu = new QMenu(name);
+
 		auto projectors = GetProjectorMenuMonitorsFormatted();
 		for (int i = 0; i < projectors.size(); i++) {
 			QString str = projectors[i];
-			QAction *action = parent->addAction(str, target, slot);
+			QAction *action = menu->addAction(str, target, slot);
 			action->setProperty("monitor", i);
 		}
+
+		return menu;
 	}
 
 	QIcon GetSourceIcon(const char *id) const;

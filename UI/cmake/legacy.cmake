@@ -249,6 +249,7 @@ target_sources(
           window-basic-main-browser.cpp
           window-basic-main-dropfiles.cpp
           window-basic-main-icons.cpp
+          window-basic-main-menus.cpp
           window-basic-main-outputs.cpp
           window-basic-main-outputs.hpp
           window-basic-main-profiles.cpp
