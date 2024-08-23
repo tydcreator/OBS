@@ -142,8 +142,10 @@ target_sources(
     graphics/vec3.h
     graphics/vec4.c
     graphics/vec4.h
-    graphics/libnsgif/libnsgif.c
-    graphics/libnsgif/libnsgif.h
+    graphics/libnsgif/gif.c
+    graphics/libnsgif/lzw.c
+    graphics/libnsgif/lzw.h
+    graphics/libnsgif/nsgif.h
     graphics/graphics-ffmpeg.c
 )
 
@@ -337,7 +339,7 @@ if(OS_WINDOWS)
   if(MSVC)
     target_link_libraries(libobs PUBLIC OBS::w32-pthreads)
 
-    target_compile_options(libobs PRIVATE "$<$<COMPILE_LANGUAGE:C>:/EHc->" "$<$<COMPILE_LANGUAGE:CXX>:/EHc->")
+    target_compile_options(libobs PRIVATE "$<$<COMPILE_LANGUAGE:C>:/EHc->" "$<$<COMPILE_LANGUAGE:CXX>:/EHc->" /wd4244 /wd4267)
 
     target_link_options(libobs PRIVATE "LINKER:/IGNORE:4098" "LINKER:/SAFESEH:NO")
 
