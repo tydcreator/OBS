@@ -1046,6 +1046,9 @@ public:
 					     obs_data_array_t *redo_array);
 
 	void UpdateEditMenu();
+	void CopySceneItem(OBSSceneItem item);
+	bool CanPasteSceneItem(bool duplicate);
+	void PasteSceneItem(OBSScene scene, bool duplicate);
 
 	void SetDisplayAffinity(QWindow *window);
 
