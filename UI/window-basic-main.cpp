@@ -1398,11 +1398,13 @@ retryScene:
 	float scrollOffX = (float)obs_data_get_double(data, "scaling_off_x");
 	float scrollOffY = (float)obs_data_get_double(data, "scaling_off_y");
 
+	ui->preview->SetFixedScaling(fixedScaling);
+	UpdateZoomControls();
+
 	if (fixedScaling) {
 		ui->preview->SetScalingLevel(scalingLevel);
 		ui->preview->SetScrollingOffset(scrollOffX, scrollOffY);
 	}
-	ui->preview->SetFixedScaling(fixedScaling);
 
 	emit ui->preview->DisplayResized();
 
@@ -8820,6 +8822,7 @@ void OBSBasic::on_sideDocks_toggled(bool side)
 void OBSBasic::on_resetUI_triggered()
 {
 	on_resetDocks_triggered();
+	on_actionScaleWindow_triggered();
 
 	ui->toggleListboxToolbars->setChecked(true);
 	ui->toggleContextBar->setChecked(true);
@@ -8909,6 +8912,7 @@ void OBSBasic::on_actionScaleWindow_triggered()
 {
 	ui->preview->SetFixedScaling(false);
 	ui->preview->ResetScrollingOffset();
+	UpdateZoomControls();
 
 	emit ui->preview->DisplayResized();
 }
@@ -8917,6 +8921,7 @@ void OBSBasic::on_actionScaleCanvas_triggered()
 {
 	ui->preview->SetFixedScaling(true);
 	ui->preview->SetScalingLevel(0);
+	UpdateZoomControls();
 
 	emit ui->preview->DisplayResized();
 }
@@ -8931,6 +8936,8 @@ void OBSBasic::on_actionScaleOutput_triggered()
 	// log base ZOOM_SENSITIVITY of x = log(x) / log(ZOOM_SENSITIVITY)
 	int32_t approxScalingLevel = int32_t(round(log(scalingAmount) / log(ZOOM_SENSITIVITY)));
 	ui->preview->SetScalingLevelAndAmount(approxScalingLevel, scalingAmount);
+	UpdateZoomControls();
+
 	emit ui->preview->DisplayResized();
 }
 
@@ -10194,4 +10201,56 @@ OBSPromptResult OBSBasic::PromptForName(const OBSPromptRequest &request, const O
 	}
 
 	return result;
+}
+
+void OBSBasic::UpdateZoomControls()
+{
+	bool fixedScaling = ui->preview->IsFixedScaling();
+
+	ui->actionPreviewZoomIn->setEnabled(fixedScaling);
+	ui->actionPreviewZoomOut->setEnabled(fixedScaling);
+	ui->actionPreviewResetZoom->setEnabled(fixedScaling);
+	ui->previewZoomOutButton->setEnabled(fixedScaling);
+	ui->previewZoomInButton->setEnabled(fixedScaling);
+}
+
+void OBSBasic::on_actionPreviewResetZoom_triggered()
+{
+	emit PreviewResetZoom();
+}
+
+void OBSBasic::on_actionPreviewZoomOut_triggered()
+{
+	emit PreviewZoomOut();
+}
+
+void OBSBasic::on_actionPreviewZoomIn_triggered()
+{
+	emit PreviewZoomIn();
+}
+
+void OBSBasic::on_previewZoomOutButton_clicked()
+{
+	ui->actionPreviewZoomIn->setEnabled(true);
+	ui->previewZoomInButton->setEnabled(true);
+	emit PreviewZoomOut();
+}
+
+void OBSBasic::on_previewZoomInButton_clicked()
+{
+	ui->actionPreviewZoomOut->setEnabled(true);
+	ui->previewZoomOutButton->setEnabled(true);
+	emit PreviewZoomIn();
+}
+
+void OBSBasic::on_preview_ZoomIsMinimum()
+{
+	ui->actionPreviewZoomOut->setEnabled(false);
+	ui->previewZoomOutButton->setEnabled(false);
+}
+
+void OBSBasic::on_preview_ZoomIsMaximum()
+{
+	ui->actionPreviewZoomIn->setEnabled(false);
+	ui->previewZoomInButton->setEnabled(false);
 }
