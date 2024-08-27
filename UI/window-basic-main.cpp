@@ -31,7 +31,6 @@
 #include <QDesktopServices>
 #include <QFileDialog>
 #include <QScreen>
-#include <QColorDialog>
 #include <QSizePolicy>
 #include <QScrollBar>
 #include <QTextStream>
@@ -2606,16 +2605,6 @@ void OBSBasic::OBSInit()
 
 	OBSBasicStats::InitializeValues();
 
-	/* ----------------------- */
-	/* Add multiview menu      */
-
-	ui->viewMenu->addSeparator();
-
-	AddProjectorMenuMonitors(ui->multiviewProjectorMenu, this,
-				 &OBSBasic::OpenMultiviewProjector);
-	connect(ui->viewMenu->menuAction(), &QAction::hovered, this,
-		&OBSBasic::UpdateMultiviewProjectorMenu);
-
 	ui->sources->UpdateIcons();
 
 #if !defined(_WIN32)
@@ -2855,13 +2844,6 @@ void OBSBasic::ShowWhatsNew(const QString &url)
 #else
 	UNUSED_PARAMETER(url);
 #endif
-}
-
-void OBSBasic::UpdateMultiviewProjectorMenu()
-{
-	ui->multiviewProjectorMenu->clear();
-	AddProjectorMenuMonitors(ui->multiviewProjectorMenu, this,
-				 &OBSBasic::OpenMultiviewProjector);
 }
 
 void OBSBasic::InitHotkeys()
@@ -3216,19 +3198,6 @@ OBSBasic::~OBSBasic()
 		patronJsonThread->wait();
 
 	delete screenshotData;
-	delete previewProjector;
-	delete studioProgramProjector;
-	delete previewProjectorSource;
-	delete previewProjectorMain;
-	delete sourceProjector;
-	delete sceneProjectorMenu;
-	delete scaleFilteringMenu;
-	delete blendingModeMenu;
-	delete colorMenu;
-	delete colorWidgetAction;
-	delete colorSelect;
-	delete deinterlaceMenu;
-	delete perSceneTransitionMenu;
 	delete shortcutFilter;
 	delete trayMenu;
 	delete programOptions;
@@ -5794,11 +5763,9 @@ void OBSBasic::on_scenes_customContextMenuRequested(const QPoint &pos)
 
 		popup.addSeparator();
 
-		delete sceneProjectorMenu;
-		sceneProjectorMenu = new QMenu(QTStr("SceneProjector"));
-		AddProjectorMenuMonitors(sceneProjectorMenu, this,
-					 &OBSBasic::OpenSceneProjector);
-		popup.addMenu(sceneProjectorMenu);
+		popup.addMenu(
+			CreateProjectorMenu(QTStr("SceneProjector"), this,
+					    &OBSBasic::OpenSceneProjector));
 
 		QAction *sceneWindow = popup.addAction(
 			QTStr("SceneWindow"), this, &OBSBasic::OpenSceneWindow);
@@ -5812,9 +5779,7 @@ void OBSBasic::on_scenes_customContextMenuRequested(const QPoint &pos)
 
 		popup.addSeparator();
 
-		delete perSceneTransitionMenu;
-		perSceneTransitionMenu = CreatePerSceneTransitionMenu();
-		popup.addMenu(perSceneTransitionMenu);
+		popup.addMenu(CreatePerSceneTransitionMenu());
 
 		/* ---------------------- */
 
@@ -5996,241 +5961,9 @@ void OBSBasic::EditSceneItemName()
 	ui->sources->Edit(idx);
 }
 
-void OBSBasic::SetDeinterlacingMode()
-{
-	QAction *action = reinterpret_cast<QAction *>(sender());
-	obs_deinterlace_mode mode =
-		(obs_deinterlace_mode)action->property("mode").toInt();
-	OBSSceneItem sceneItem = GetCurrentSceneItem();
-	obs_source_t *source = obs_sceneitem_get_source(sceneItem);
-
-	obs_source_set_deinterlace_mode(source, mode);
-}
-
-void OBSBasic::SetDeinterlacingOrder()
-{
-	QAction *action = reinterpret_cast<QAction *>(sender());
-	obs_deinterlace_field_order order =
-		(obs_deinterlace_field_order)action->property("order").toInt();
-	OBSSceneItem sceneItem = GetCurrentSceneItem();
-	obs_source_t *source = obs_sceneitem_get_source(sceneItem);
-
-	obs_source_set_deinterlace_field_order(source, order);
-}
-
-QMenu *OBSBasic::AddDeinterlacingMenu(QMenu *menu, obs_source_t *source)
-{
-	obs_deinterlace_mode deinterlaceMode =
-		obs_source_get_deinterlace_mode(source);
-	obs_deinterlace_field_order deinterlaceOrder =
-		obs_source_get_deinterlace_field_order(source);
-	QAction *action;
-
-#define ADD_MODE(name, mode)                                       \
-	action = menu->addAction(QTStr("" name), this,             \
-				 &OBSBasic::SetDeinterlacingMode); \
-	action->setProperty("mode", (int)mode);                    \
-	action->setCheckable(true);                                \
-	action->setChecked(deinterlaceMode == mode);
-
-	ADD_MODE("Disable", OBS_DEINTERLACE_MODE_DISABLE);
-	ADD_MODE("Deinterlacing.Discard", OBS_DEINTERLACE_MODE_DISCARD);
-	ADD_MODE("Deinterlacing.Retro", OBS_DEINTERLACE_MODE_RETRO);
-	ADD_MODE("Deinterlacing.Blend", OBS_DEINTERLACE_MODE_BLEND);
-	ADD_MODE("Deinterlacing.Blend2x", OBS_DEINTERLACE_MODE_BLEND_2X);
-	ADD_MODE("Deinterlacing.Linear", OBS_DEINTERLACE_MODE_LINEAR);
-	ADD_MODE("Deinterlacing.Linear2x", OBS_DEINTERLACE_MODE_LINEAR_2X);
-	ADD_MODE("Deinterlacing.Yadif", OBS_DEINTERLACE_MODE_YADIF);
-	ADD_MODE("Deinterlacing.Yadif2x", OBS_DEINTERLACE_MODE_YADIF_2X);
-#undef ADD_MODE
-
-	menu->addSeparator();
-
-#define ADD_ORDER(name, order)                                       \
-	action = menu->addAction(QTStr("Deinterlacing." name), this, \
-				 &OBSBasic::SetDeinterlacingOrder);  \
-	action->setProperty("order", (int)order);                    \
-	action->setCheckable(true);                                  \
-	action->setChecked(deinterlaceOrder == order);
-
-	ADD_ORDER("TopFieldFirst", OBS_DEINTERLACE_FIELD_ORDER_TOP);
-	ADD_ORDER("BottomFieldFirst", OBS_DEINTERLACE_FIELD_ORDER_BOTTOM);
-#undef ADD_ORDER
-
-	return menu;
-}
-
-void OBSBasic::SetScaleFilter()
-{
-	QAction *action = reinterpret_cast<QAction *>(sender());
-	obs_scale_type mode = (obs_scale_type)action->property("mode").toInt();
-	OBSSceneItem sceneItem = GetCurrentSceneItem();
-
-	obs_sceneitem_set_scale_filter(sceneItem, mode);
-}
-
-QMenu *OBSBasic::AddScaleFilteringMenu(QMenu *menu, obs_sceneitem_t *item)
-{
-	obs_scale_type scaleFilter = obs_sceneitem_get_scale_filter(item);
-	QAction *action;
-
-#define ADD_MODE(name, mode)                                 \
-	action = menu->addAction(QTStr("" name), this,       \
-				 &OBSBasic::SetScaleFilter); \
-	action->setProperty("mode", (int)mode);              \
-	action->setCheckable(true);                          \
-	action->setChecked(scaleFilter == mode);
-
-	ADD_MODE("Disable", OBS_SCALE_DISABLE);
-	ADD_MODE("ScaleFiltering.Point", OBS_SCALE_POINT);
-	ADD_MODE("ScaleFiltering.Bilinear", OBS_SCALE_BILINEAR);
-	ADD_MODE("ScaleFiltering.Bicubic", OBS_SCALE_BICUBIC);
-	ADD_MODE("ScaleFiltering.Lanczos", OBS_SCALE_LANCZOS);
-	ADD_MODE("ScaleFiltering.Area", OBS_SCALE_AREA);
-#undef ADD_MODE
-
-	return menu;
-}
-
-void OBSBasic::SetBlendingMethod()
-{
-	QAction *action = reinterpret_cast<QAction *>(sender());
-	obs_blending_method method =
-		(obs_blending_method)action->property("method").toInt();
-	OBSSceneItem sceneItem = GetCurrentSceneItem();
-
-	obs_sceneitem_set_blending_method(sceneItem, method);
-}
-
-QMenu *OBSBasic::AddBlendingMethodMenu(QMenu *menu, obs_sceneitem_t *item)
-{
-	obs_blending_method blendingMethod =
-		obs_sceneitem_get_blending_method(item);
-	QAction *action;
-
-#define ADD_MODE(name, method)                                  \
-	action = menu->addAction(QTStr("" name), this,          \
-				 &OBSBasic::SetBlendingMethod); \
-	action->setProperty("method", (int)method);             \
-	action->setCheckable(true);                             \
-	action->setChecked(blendingMethod == method);
-
-	ADD_MODE("BlendingMethod.Default", OBS_BLEND_METHOD_DEFAULT);
-	ADD_MODE("BlendingMethod.SrgbOff", OBS_BLEND_METHOD_SRGB_OFF);
-#undef ADD_MODE
-
-	return menu;
-}
-
-void OBSBasic::SetBlendingMode()
-{
-	QAction *action = reinterpret_cast<QAction *>(sender());
-	obs_blending_type mode =
-		(obs_blending_type)action->property("mode").toInt();
-	OBSSceneItem sceneItem = GetCurrentSceneItem();
-
-	obs_sceneitem_set_blending_mode(sceneItem, mode);
-}
-
-QMenu *OBSBasic::AddBlendingModeMenu(QMenu *menu, obs_sceneitem_t *item)
-{
-	obs_blending_type blendingMode = obs_sceneitem_get_blending_mode(item);
-	QAction *action;
-
-#define ADD_MODE(name, mode)                                  \
-	action = menu->addAction(QTStr("" name), this,        \
-				 &OBSBasic::SetBlendingMode); \
-	action->setProperty("mode", (int)mode);               \
-	action->setCheckable(true);                           \
-	action->setChecked(blendingMode == mode);
-
-	ADD_MODE("BlendingMode.Normal", OBS_BLEND_NORMAL);
-	ADD_MODE("BlendingMode.Additive", OBS_BLEND_ADDITIVE);
-	ADD_MODE("BlendingMode.Subtract", OBS_BLEND_SUBTRACT);
-	ADD_MODE("BlendingMode.Screen", OBS_BLEND_SCREEN);
-	ADD_MODE("BlendingMode.Multiply", OBS_BLEND_MULTIPLY);
-	ADD_MODE("BlendingMode.Lighten", OBS_BLEND_LIGHTEN);
-	ADD_MODE("BlendingMode.Darken", OBS_BLEND_DARKEN);
-#undef ADD_MODE
-
-	return menu;
-}
-
-QMenu *OBSBasic::AddBackgroundColorMenu(QMenu *menu,
-					QWidgetAction *widgetAction,
-					ColorSelect *select,
-					obs_sceneitem_t *item)
-{
-	QAction *action;
-
-	menu->setStyleSheet(QString(
-		"*[bgColor=\"1\"]{background-color:rgba(255,68,68,33%);}"
-		"*[bgColor=\"2\"]{background-color:rgba(255,255,68,33%);}"
-		"*[bgColor=\"3\"]{background-color:rgba(68,255,68,33%);}"
-		"*[bgColor=\"4\"]{background-color:rgba(68,255,255,33%);}"
-		"*[bgColor=\"5\"]{background-color:rgba(68,68,255,33%);}"
-		"*[bgColor=\"6\"]{background-color:rgba(255,68,255,33%);}"
-		"*[bgColor=\"7\"]{background-color:rgba(68,68,68,33%);}"
-		"*[bgColor=\"8\"]{background-color:rgba(255,255,255,33%);}"));
-
-	obs_data_t *privData = obs_sceneitem_get_private_settings(item);
-	obs_data_release(privData);
-
-	obs_data_set_default_int(privData, "color-preset", 0);
-	int preset = obs_data_get_int(privData, "color-preset");
-
-	action = menu->addAction(QTStr("Clear"), this, &OBSBasic::ColorChange);
-	action->setCheckable(true);
-	action->setProperty("bgColor", 0);
-	action->setChecked(preset == 0);
-
-	action = menu->addAction(QTStr("CustomColor"), this,
-				 &OBSBasic::ColorChange);
-	action->setCheckable(true);
-	action->setProperty("bgColor", 1);
-	action->setChecked(preset == 1);
-
-	menu->addSeparator();
-
-	widgetAction->setDefaultWidget(select);
-
-	for (int i = 1; i < 9; i++) {
-		stringstream button;
-		button << "preset" << i;
-		QPushButton *colorButton =
-			select->findChild<QPushButton *>(button.str().c_str());
-		if (preset == i + 1)
-			colorButton->setStyleSheet("border: 2px solid black");
-
-		colorButton->setProperty("bgColor", i);
-		select->connect(colorButton, &QPushButton::released, this,
-				&OBSBasic::ColorChange);
-	}
-
-	menu->addAction(widgetAction);
-
-	return menu;
-}
-
-ColorSelect::ColorSelect(QWidget *parent)
-	: QWidget(parent),
-	  ui(new Ui::ColorSelect)
-{
-	ui->setupUi(this);
-}
-
 void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 {
 	QMenu popup(this);
-	delete previewProjectorSource;
-	delete sourceProjector;
-	delete scaleFilteringMenu;
-	delete blendingMethodMenu;
-	delete blendingModeMenu;
-	delete colorMenu;
-	delete colorWidgetAction;
-	delete colorSelect;
-	delete deinterlaceMenu;
 
 	if (preview) {
 		QAction *action = popup.addAction(
@@ -6245,11 +5978,9 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 		popup.addAction(ui->actionLockPreview);
 		popup.addMenu(ui->scalingMenu);
 
-		previewProjectorSource = new QMenu(QTStr("PreviewProjector"));
-		AddProjectorMenuMonitors(previewProjectorSource, this,
-					 &OBSBasic::OpenPreviewProjector);
-
-		popup.addMenu(previewProjectorSource);
+		popup.addMenu(
+			CreateProjectorMenu(QTStr("PreviewProjector"), this,
+					    &OBSBasic::OpenPreviewProjector));
 
 		QAction *previewWindow =
 			popup.addAction(QTStr("PreviewWindow"), this,
@@ -6301,11 +6032,7 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 		bool hasAudio = (flags & OBS_SOURCE_AUDIO) == OBS_SOURCE_AUDIO;
 		bool hasVideo = (flags & OBS_SOURCE_VIDEO) == OBS_SOURCE_VIDEO;
 
-		colorMenu = new QMenu(QTStr("ChangeBG"));
-		colorWidgetAction = new QWidgetAction(colorMenu);
-		colorSelect = new ColorSelect(colorMenu);
-		popup.addMenu(AddBackgroundColorMenu(
-			colorMenu, colorWidgetAction, colorSelect, sceneItem));
+		popup.addMenu(CreateBackgroundColorMenu(sceneItem));
 		popup.addAction(renameSource);
 		popup.addAction(ui->actionRemoveSource);
 		popup.addSeparator();
@@ -6339,21 +6066,12 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 			if (width < 32 || height < 32)
 				resizeOutput->setEnabled(false);
 
-			scaleFilteringMenu = new QMenu(QTStr("ScaleFiltering"));
-			popup.addMenu(AddScaleFilteringMenu(scaleFilteringMenu,
-							    sceneItem));
-			blendingModeMenu = new QMenu(QTStr("BlendingMode"));
-			popup.addMenu(AddBlendingModeMenu(blendingModeMenu,
-							  sceneItem));
-			blendingMethodMenu = new QMenu(QTStr("BlendingMethod"));
-			popup.addMenu(AddBlendingMethodMenu(blendingMethodMenu,
-							    sceneItem));
-			if (isAsyncVideo) {
-				deinterlaceMenu =
-					new QMenu(QTStr("Deinterlacing"));
-				popup.addMenu(AddDeinterlacingMenu(
-					deinterlaceMenu, source));
-			}
+			popup.addMenu(CreateScaleFilteringMenu(sceneItem));
+			popup.addMenu(CreateBlendingModeMenu(sceneItem));
+			popup.addMenu(CreateBlendingMethodMenu(sceneItem));
+
+			if (isAsyncVideo)
+				popup.addMenu(CreateDeinterlacingMenu(source));
 
 			popup.addSeparator();
 
@@ -6361,11 +6079,9 @@ void OBSBasic::CreateSourcePopupMenu(int idx, bool preview)
 			popup.addMenu(CreateVisibilityTransitionMenu(false));
 			popup.addSeparator();
 
-			sourceProjector = new QMenu(QTStr("SourceProjector"));
-			AddProjectorMenuMonitors(
-				sourceProjector, this,
-				&OBSBasic::OpenSourceProjector);
-			popup.addMenu(sourceProjector);
+			popup.addMenu(CreateProjectorMenu(
+				QTStr("SourceProjector"), this,
+				&OBSBasic::OpenSourceProjector));
 			popup.addAction(QTStr("SourceWindow"), this,
 					&OBSBasic::OpenSourceWindow);
 
@@ -8520,13 +8236,10 @@ void OBSBasic::on_preview_customContextMenuRequested()
 void OBSBasic::ProgramViewContextMenuRequested()
 {
 	QMenu popup(this);
-	QPointer<QMenu> studioProgramProjector;
 
-	studioProgramProjector = new QMenu(QTStr("StudioProgramProjector"));
-	AddProjectorMenuMonitors(studioProgramProjector, this,
-				 &OBSBasic::OpenStudioProgramProjector);
-
-	popup.addMenu(studioProgramProjector);
+	popup.addMenu(
+		CreateProjectorMenu(QTStr("StudioProgramProjector"), this,
+				    &OBSBasic::OpenStudioProgramProjector));
 	popup.addAction(QTStr("StudioProgramWindow"), this,
 			&OBSBasic::OpenStudioProgramWindow);
 	popup.addAction(QTStr("Screenshot.StudioProgram"), this,
@@ -8538,7 +8251,6 @@ void OBSBasic::ProgramViewContextMenuRequested()
 void OBSBasic::on_previewDisabledWidget_customContextMenuRequested()
 {
 	QMenu popup(this);
-	delete previewProjectorMain;
 
 	QAction *action =
 		popup.addAction(QTStr("Basic.Main.PreviewConextMenu.Enable"),
@@ -8546,14 +8258,11 @@ void OBSBasic::on_previewDisabledWidget_customContextMenuRequested()
 	action->setCheckable(true);
 	action->setChecked(obs_display_enabled(ui->preview->GetDisplay()));
 
-	previewProjectorMain = new QMenu(QTStr("PreviewProjector"));
-	AddProjectorMenuMonitors(previewProjectorMain, this,
-				 &OBSBasic::OpenPreviewProjector);
-
 	QAction *previewWindow = popup.addAction(QTStr("PreviewWindow"), this,
 						 &OBSBasic::OpenPreviewWindow);
 
-	popup.addMenu(previewProjectorMain);
+	popup.addMenu(CreateProjectorMenu(QTStr("PreviewProjector"), this,
+					  &OBSBasic::OpenPreviewProjector));
 	popup.addAction(previewWindow);
 	popup.exec(QCursor::pos());
 }
@@ -10026,17 +9735,34 @@ void OBSBasic::SystemTrayInit()
 	exit = new QAction(QTStr("Exit"), trayIcon.data());
 
 	trayMenu = new QMenu;
-	previewProjector = new QMenu(QTStr("PreviewProjector"));
-	studioProgramProjector = new QMenu(QTStr("StudioProgramProjector"));
-	AddProjectorMenuMonitors(previewProjector, this,
-				 &OBSBasic::OpenPreviewProjector);
-	AddProjectorMenuMonitors(studioProgramProjector, this,
-				 &OBSBasic::OpenStudioProgramProjector);
+
+	auto menuShown = [this]() {
+		// Refresh projector list
+		previewProjector.reset(
+			CreateProjectorMenu(QTStr("PreviewProjector"), this,
+					    &OBSBasic::OpenPreviewProjector));
+		studioProgramProjector.reset(CreateProjectorMenu(
+			QTStr("StudioProgramProjector"), this,
+			&OBSBasic::OpenStudioProgramProjector));
+
+		foreach(QAction * action, trayMenu->actions())
+		{
+			if (action->objectName() == "showHideSeparator") {
+				trayMenu->insertMenu(action,
+						     previewProjector.data());
+				trayMenu->insertMenu(
+					action, studioProgramProjector.data());
+				break;
+			}
+		}
+	};
+
+	connect(trayMenu, &QMenu::aboutToShow, this, menuShown);
+
 	trayMenu->addAction(showHide);
 	trayMenu->addSeparator();
-	trayMenu->addMenu(previewProjector);
-	trayMenu->addMenu(studioProgramProjector);
-	trayMenu->addSeparator();
+	QAction *separator = trayMenu->addSeparator();
+	separator->setObjectName("showHideSeparator");
 	trayMenu->addAction(sysTrayStream);
 	trayMenu->addAction(sysTrayRecord);
 	trayMenu->addAction(sysTrayReplayBuffer);
@@ -10070,14 +9796,6 @@ void OBSBasic::SystemTrayInit()
 
 void OBSBasic::IconActivated(QSystemTrayIcon::ActivationReason reason)
 {
-	// Refresh projector list
-	previewProjector->clear();
-	studioProgramProjector->clear();
-	AddProjectorMenuMonitors(previewProjector, this,
-				 &OBSBasic::OpenPreviewProjector);
-	AddProjectorMenuMonitors(studioProgramProjector, this,
-				 &OBSBasic::OpenStudioProgramProjector);
-
 #ifdef __APPLE__
 	UNUSED_PARAMETER(reason);
 #else
@@ -10346,158 +10064,6 @@ void OBSBasic::on_actionPasteFilters_triggered()
 	OBSSource dstSource = obs_sceneitem_get_source(sceneItem);
 
 	SourcePasteFilters(source.Get(), dstSource);
-}
-
-static void ConfirmColor(SourceTree *sources, const QColor &color,
-			 QModelIndexList selectedItems)
-{
-	for (int x = 0; x < selectedItems.count(); x++) {
-		SourceTreeItem *treeItem =
-			sources->GetItemWidget(selectedItems[x].row());
-		treeItem->setStyleSheet("background: " +
-					color.name(QColor::HexArgb));
-		treeItem->style()->unpolish(treeItem);
-		treeItem->style()->polish(treeItem);
-
-		OBSSceneItem sceneItem = sources->Get(selectedItems[x].row());
-		OBSDataAutoRelease privData =
-			obs_sceneitem_get_private_settings(sceneItem);
-		obs_data_set_int(privData, "color-preset", 1);
-		obs_data_set_string(privData, "color",
-				    QT_TO_UTF8(color.name(QColor::HexArgb)));
-	}
-}
-
-void OBSBasic::ColorChange()
-{
-	QModelIndexList selectedItems =
-		ui->sources->selectionModel()->selectedIndexes();
-	QAction *action = qobject_cast<QAction *>(sender());
-	QPushButton *colorButton = qobject_cast<QPushButton *>(sender());
-
-	if (selectedItems.count() == 0)
-		return;
-
-	if (colorButton) {
-		int preset = colorButton->property("bgColor").value<int>();
-
-		for (int x = 0; x < selectedItems.count(); x++) {
-			SourceTreeItem *treeItem = ui->sources->GetItemWidget(
-				selectedItems[x].row());
-			treeItem->setStyleSheet("");
-			treeItem->setProperty("bgColor", preset);
-			treeItem->style()->unpolish(treeItem);
-			treeItem->style()->polish(treeItem);
-
-			OBSSceneItem sceneItem =
-				ui->sources->Get(selectedItems[x].row());
-			OBSDataAutoRelease privData =
-				obs_sceneitem_get_private_settings(sceneItem);
-			obs_data_set_int(privData, "color-preset", preset + 1);
-			obs_data_set_string(privData, "color", "");
-		}
-
-		for (int i = 1; i < 9; i++) {
-			stringstream button;
-			button << "preset" << i;
-			QPushButton *cButton =
-				colorButton->parentWidget()
-					->findChild<QPushButton *>(
-						button.str().c_str());
-			cButton->setStyleSheet("border: 1px solid black");
-		}
-
-		colorButton->setStyleSheet("border: 2px solid black");
-	} else if (action) {
-		int preset = action->property("bgColor").value<int>();
-
-		if (preset == 1) {
-			OBSSceneItem curSceneItem = GetCurrentSceneItem();
-			SourceTreeItem *curTreeItem =
-				GetItemWidgetFromSceneItem(curSceneItem);
-			OBSDataAutoRelease curPrivData =
-				obs_sceneitem_get_private_settings(
-					curSceneItem);
-
-			int oldPreset =
-				obs_data_get_int(curPrivData, "color-preset");
-			const QString oldSheet = curTreeItem->styleSheet();
-
-			auto liveChangeColor = [=](const QColor &color) {
-				if (color.isValid()) {
-					curTreeItem->setStyleSheet(
-						"background: " +
-						color.name(QColor::HexArgb));
-				}
-			};
-
-			auto changedColor = [=](const QColor &color) {
-				if (color.isValid()) {
-					ConfirmColor(ui->sources, color,
-						     selectedItems);
-				}
-			};
-
-			auto rejected = [=]() {
-				if (oldPreset == 1) {
-					curTreeItem->setStyleSheet(oldSheet);
-					curTreeItem->setProperty("bgColor", 0);
-				} else if (oldPreset == 0) {
-					curTreeItem->setStyleSheet(
-						"background: none");
-					curTreeItem->setProperty("bgColor", 0);
-				} else {
-					curTreeItem->setStyleSheet("");
-					curTreeItem->setProperty("bgColor",
-								 oldPreset - 1);
-				}
-
-				curTreeItem->style()->unpolish(curTreeItem);
-				curTreeItem->style()->polish(curTreeItem);
-			};
-
-			QColorDialog::ColorDialogOptions options =
-				QColorDialog::ShowAlphaChannel;
-
-			const char *oldColor =
-				obs_data_get_string(curPrivData, "color");
-			const char *customColor = *oldColor != 0 ? oldColor
-								 : "#55FF0000";
-#ifdef __linux__
-			// TODO: Revisit hang on Ubuntu with native dialog
-			options |= QColorDialog::DontUseNativeDialog;
-#endif
-
-			QColorDialog *colorDialog = new QColorDialog(this);
-			colorDialog->setOptions(options);
-			colorDialog->setCurrentColor(QColor(customColor));
-			connect(colorDialog, &QColorDialog::currentColorChanged,
-				liveChangeColor);
-			connect(colorDialog, &QColorDialog::colorSelected,
-				changedColor);
-			connect(colorDialog, &QColorDialog::rejected, rejected);
-			colorDialog->open();
-		} else {
-			for (int x = 0; x < selectedItems.count(); x++) {
-				SourceTreeItem *treeItem =
-					ui->sources->GetItemWidget(
-						selectedItems[x].row());
-				treeItem->setStyleSheet("background: none");
-				treeItem->setProperty("bgColor", preset);
-				treeItem->style()->unpolish(treeItem);
-				treeItem->style()->polish(treeItem);
-
-				OBSSceneItem sceneItem = ui->sources->Get(
-					selectedItems[x].row());
-				OBSDataAutoRelease privData =
-					obs_sceneitem_get_private_settings(
-						sceneItem);
-				obs_data_set_int(privData, "color-preset",
-						 preset);
-				obs_data_set_string(privData, "color", "");
-			}
-		}
-	}
 }
 
 SourceTreeItem *OBSBasic::GetItemWidgetFromSceneItem(obs_sceneitem_t *sceneItem)
@@ -11254,4 +10820,13 @@ void OBSBasic::PreviewScalingModeChanged(int value)
 		on_actionScaleOutput_triggered();
 		break;
 	};
+}
+
+void OBSBasic::on_viewMenu_aboutToShow()
+{
+	multiviewMenu.reset(
+		CreateProjectorMenu(QTStr("MultiviewProjector"), this,
+				    &OBSBasic::OpenMultiviewProjector));
+	ui->viewMenu->insertMenu(ui->multiviewProjectorWindowed,
+				 multiviewMenu.data());
 }
