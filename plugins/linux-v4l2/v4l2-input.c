@@ -409,11 +409,7 @@ v4l2_device_add_devices_from(struct v4l2_device_entry *first_device,
 	struct dirent *dp;
 	struct dstr full_path;
 	const char *scanned_dir;
-<<<<<<< HEAD
 	struct dirent **namelist = NULL;
-=======
-	struct dirent **namelist;
->>>>>>> 49e3004c8 (linux-v4l2: Save device by id or path)
 	int no;
 
 #ifdef __FreeBSD__
