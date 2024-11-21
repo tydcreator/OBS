@@ -3530,7 +3530,7 @@
             "supported video codecs": [
                 "h264"
             ]
-        }
+        },
         {
             "name": "SOOP Global",
             "common": false, 
@@ -3552,7 +3552,7 @@
             "recommended": {
                 "keyint": 1,
                 "profile": "main",
-                "bframes": 0
+                "bframes": 0,
                 "supported resolutions": [
                     "1920x1080",
                     "1280x720",
@@ -3603,7 +3603,7 @@
                 ],
                 "max fps": 60,
                 "max video bitrate": 8000,
-                "max audio bitrate": 192,
+                "max audio bitrate": 192
             }
         }
     ]
