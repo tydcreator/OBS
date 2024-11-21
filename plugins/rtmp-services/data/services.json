@@ -3533,11 +3533,8 @@
         }
         {
             "name": "SOOP Global",
-            "alt_names": [
-                "SOOP Global RTMP",
-                "sooplive.com"
-            ]
             "common": false, 
+            "more_info_link": "https://sooplive.helpshift.com/hc/en/3-soop/faq/20",
             "stream_key_link": "https://www.sooplive.com/dashboard",
             "servers": [
                 {
@@ -3546,8 +3543,16 @@
                 }
             ],
             "protocol": "RTMP",
+            "supported video codecs": [
+                "h264"
+            ],
+            "supported audio codecs": [
+                "aac"
+            ],
             "recommended": {
+                "keyint": 1,
                 "profile": "main",
+                "bframes": 0
                 "supported resolutions": [
                     "1920x1080",
                     "1280x720",
@@ -3596,15 +3601,10 @@
                         "max bitrate": 8000
                     }
                 ],
-                "keyint": 1,
                 "max fps": 60,
                 "max video bitrate": 8000,
                 "max audio bitrate": 192,
-                "bframes": 0
-            },
-            "supported video codecs": [
-                "h264"
-            ]
+            }
         }
     ]
 }
