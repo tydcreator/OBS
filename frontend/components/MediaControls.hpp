@@ -1,10 +1,9 @@
 #pragma once
 
+#include <obs.hpp>
+
 #include <QWidget>
 #include <QTimer>
-#include <vector>
-#include <obs.hpp>
-#include <qt-wrappers.hpp>
 
 class Ui_MediaControls;
 

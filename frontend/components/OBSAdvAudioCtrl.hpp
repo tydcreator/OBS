@@ -1,17 +1,19 @@
 #pragma once
 
 #include <obs.hpp>
-#include <QWidget>
-#include <QPointer>
-#include <QDoubleSpinBox>
-#include <QStackedWidget>
-#include "balance-slider.hpp"
 
-class QGridLayout;
+#include <QObject>
+#include <QPointer>
+
+class QWidget;
 class QLabel;
+class QStackedWidget;
 class QSpinBox;
+class QDoubleSpinBox;
 class QCheckBox;
+class BalanceSlider;
 class QComboBox;
+class QGridLayout;
 
 enum class VolumeType {
 	dB,

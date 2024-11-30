@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QPushButton>
+#include <QWidget>
+#include <QString>
 
 /* Button with its checked property not changed when clicked.
  * Meant to be used in situations where manually changing the property

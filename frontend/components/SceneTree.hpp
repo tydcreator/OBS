@@ -1,8 +1,9 @@
 #pragma once
 
+#include <QObject>
 #include <QListWidget>
-#include <QEvent>
-#include <QItemDelegate>
+#include <QResizeEvent>
+#include <QWidget>
 
 class SceneTree : public QListWidget {
 	Q_OBJECT
