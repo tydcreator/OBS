@@ -18,12 +18,11 @@
 #pragma once
 
 #include <QDialog>
-#include <QLabel>
-#include <QLineEdit>
-#include <QCheckBox>
-#include <QDialogButtonBox>
-#include <string>
-#include <memory>
+
+class QString;
+class QLabel;
+class QLineEdit;
+class QCheckBox;
 
 class NameDialog : public QDialog {
 	Q_OBJECT
