@@ -1,15 +1,15 @@
-#include <QAction>
-#include <QGuiApplication>
-#include <QMouseEvent>
-#include <QMenu>
 #include <QScreen>
+#include <QWindow>
+
 #include <qt-wrappers.hpp>
-#include "moc_window-projector.cpp"
-#include "obs-app.hpp"
-#include "window-basic-main.hpp"
-#include "display-helpers.hpp"
-#include "platform.hpp"
-#include "multiview.hpp"
+#include <OBSApp.hpp>
+#include <components/Multiview.hpp>
+#include <utility/display-helpers.hpp>
+#include <utility/platform.hpp>
+#include <widgets/OBSBasic.hpp>
+
+#include "OBSProjector.hpp"
+#include "moc_OBSProjector.cpp"
 
 static QList<OBSProjector *> multiviewProjectors;
 
