@@ -1,22 +1,17 @@
-#include "moc_auth-twitch.cpp"
+#include "TwitchAuth.hpp"
 
-#include <QRegularExpression>
-#include <QPushButton>
-#include <QHBoxLayout>
-#include <QVBoxLayout>
+#include <dialogs/OAuthLogin.hpp>
+#include <docks/BrowserDock.hpp>
+#include <utility/obf.h>
+#include <utility/RemoteTextThread.hpp>
+#include <widgets/OBSBasic.hpp>
+
+#include <ui-config.h>
+#include <qt-wrappers.hpp>
+
 #include <QUuid>
 
-#include <qt-wrappers.hpp>
-#include <obs-app.hpp>
-
-#include "window-dock-browser.hpp"
-#include "window-basic-main.hpp"
-#include "remote-text.hpp"
-
-#include <json11.hpp>
-
-#include "ui-config.h"
-#include "obf.h"
+#include "moc_TwitchAuth.cpp"
 
 using namespace json11;
 
