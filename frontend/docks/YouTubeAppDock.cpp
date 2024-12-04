@@ -1,14 +1,19 @@
-#include <QUuid>
+#include "YouTubeAppDock.hpp"
 
-#include "window-basic-main.hpp"
-#include "youtube-api-wrappers.hpp"
-#include "moc_window-dock-youtube-app.cpp"
+#include <utility/YoutubeApiWrappers.hpp>
+#include <widgets/OBSBasic.hpp>
 
-#include "ui-config.h"
-#include "qt-wrappers.hpp"
+#include <qt-wrappers.hpp>
 
 #include <nlohmann/json.hpp>
+
+#include <QUuid>
+
+#include "moc_YouTubeAppDock.cpp"
+
 using json = nlohmann::json;
+
+extern bool cef_js_avail;
 
 #ifdef YOUTUBE_WEBAPP_PLACEHOLDER
 static constexpr const char *YOUTUBE_WEBAPP_PLACEHOLDER_URL = YOUTUBE_WEBAPP_PLACEHOLDER;
@@ -29,6 +34,7 @@ static constexpr const char *INGESTION_STARTED = "INGESTION_STARTED";
 static constexpr const char *INGESTION_STOPPED = "INGESTION_STOPPED";
 
 YouTubeAppDock::YouTubeAppDock(const QString &title) : BrowserDock(title), dockBrowser(nullptr)
+
 {
 	cef->init_browser();
 	OBSBasic::InitBrowserPanelSafeBlock();
