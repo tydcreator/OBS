@@ -491,13 +491,14 @@
         return NO;
     }
 
-    [self AVCaptureLog:LOG_INFO withFormat:@"Capturing '%@' (%@):\n"
-                                            " Using Format          : %@"
-                                            " FPS                   : %g (%u/%u)\n"
-                                            " Frame Interval        : %g\u00a0s\n",
-                                           self.deviceInput.device.localizedName, self.deviceInput.device.uniqueID,
-                                           selectedFormatNSString, media_frames_per_second_to_fps(fps), fps.numerator,
-                                           fps.denominator, media_frames_per_second_to_frame_interval(fps)];
+    [self AVCaptureLog:LOG_INFO
+            withFormat:@"Capturing '%@' (%@):\n"
+                        " Using Format          : %@ \n"
+                        " FPS                   : %g (%u/%u)\n"
+                        " Frame Interval        : %g\u00a0s\n",
+                       self.deviceInput.device.localizedName, self.deviceInput.device.uniqueID,
+                       format.obsPropertyListDescription, media_frames_per_second_to_fps(fps), fps.numerator,
+                       fps.denominator, media_frames_per_second_to_frame_interval(fps)];
 
     OBSAVCaptureVideoInfo newInfo = {.colorSpace = _videoInfo.colorSpace,
                                      .fourCC = _videoInfo.fourCC,
