@@ -47,7 +47,7 @@ void OBSBasicPreview::Init()
 
 vec2 OBSBasicPreview::GetMouseEventPos(QMouseEvent *event)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	float pixelRatio = main->GetDevicePixelRatio();
 	float scale = pixelRatio / main->previewScale;
 	QPoint qtPos = event->pos();
@@ -173,7 +173,7 @@ static inline vec2 GetOBSScreenSize()
 
 vec3 OBSBasicPreview::GetSnapOffset(const vec3 &tl, const vec3 &br)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	vec2 screenSize = GetOBSScreenSize();
 	vec3 clampOffset;
 
@@ -218,7 +218,7 @@ vec3 OBSBasicPreview::GetSnapOffset(const vec3 &tl, const vec3 &br)
 
 OBSSceneItem OBSBasicPreview::GetItemAtPos(const vec2 &pos, bool selectBelow)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 	if (!scene)
@@ -274,7 +274,7 @@ static bool CheckItemSelected(obs_scene_t * /* scene */, obs_sceneitem_t *item, 
 
 bool OBSBasicPreview::SelectedAtPos(const vec2 &pos)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 	if (!scene)
@@ -435,7 +435,7 @@ static vec2 GetItemSize(obs_sceneitem_t *item)
 
 void OBSBasicPreview::GetStretchHandleData(const vec2 &pos, bool ignoreGroup)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 	if (!scene)
@@ -563,7 +563,7 @@ void OBSBasicPreview::mousePressEvent(QMouseEvent *event)
 		return;
 	}
 
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	float pixelRatio = main->GetDevicePixelRatio();
 	float x = pos.x() - main->previewX / pixelRatio;
 	float y = pos.y() - main->previewY / pixelRatio;
@@ -685,7 +685,7 @@ static bool select_one(obs_scene_t * /* scene */, obs_sceneitem_t *item, void *p
 
 void OBSBasicPreview::DoSelect(const vec2 &pos)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 	OBSSceneItem item = GetItemAtPos(pos, true);
@@ -776,13 +776,14 @@ void OBSBasicPreview::mouseReleaseEvent(QMouseEvent *event)
 		hoveredPreviewItems.push_back(item);
 		selectedItems.clear();
 	}
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+
+	OBSBasic *main = OBSBasic::Get();
 	OBSDataAutoRelease rwrapper = obs_scene_save_transform_states(main->GetCurrentScene(), true);
 
 	auto undo_redo = [](const std::string &data) {
 		OBSDataAutoRelease dat = obs_data_create_from_json(data.c_str());
 		OBSSourceAutoRelease source = obs_get_source_by_uuid(obs_data_get_string(dat, "scene_uuid"));
-		reinterpret_cast<OBSBasic *>(App()->GetMainWindow())->SetCurrentScene(source.Get(), true);
+		OBSBasic::Get()->SetCurrentScene(source.Get(), true);
 
 		obs_scene_load_transform_states(data.c_str());
 	};
@@ -909,7 +910,7 @@ static bool GetSourceSnapOffset(obs_scene_t * /* scene */, obs_sceneitem_t *item
 
 void OBSBasicPreview::SnapItemMovement(vec2 &offset)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	OBSScene scene = main->GetCurrentScene();
 
 	SelectedItemBounds data;
@@ -985,7 +986,7 @@ static bool move_items(obs_scene_t * /* scene */, obs_sceneitem_t *item, void *p
 void OBSBasicPreview::MoveItems(const vec2 &pos)
 {
 	Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	OBSScene scene = main->GetCurrentScene();
 
 	vec2 offset, moveOffset;
@@ -1153,7 +1154,7 @@ static bool FindItemsInBox(obs_scene_t * /* scene */, obs_sceneitem_t *item, voi
 
 void OBSBasicPreview::BoxItems(const vec2 &startPos, const vec2 &pos)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 	if (!scene)
@@ -1480,7 +1481,7 @@ void OBSBasicPreview::StretchItem(const vec2 &pos)
 
 void OBSBasicPreview::RotateItem(const vec2 &pos)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	OBSScene scene = main->GetCurrentScene();
 	Qt::KeyboardModifiers modifiers = QGuiApplication::keyboardModifiers();
 	bool shiftDown = (modifiers & Qt::ShiftModifier);
@@ -1528,7 +1529,7 @@ void OBSBasicPreview::RotateItem(const vec2 &pos)
 
 void OBSBasicPreview::mouseMoveEvent(QMouseEvent *event)
 {
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 	changed = true;
 
 	QPointF qtPos = event->position();
@@ -1608,7 +1609,7 @@ void OBSBasicPreview::mouseMoveEvent(QMouseEvent *event)
 
 		if (!mouseMoved && hoveredPreviewItems.size() > 0) {
 			mousePos = pos;
-			OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+			OBSBasic *main = OBSBasic::Get();
 			float scale = main->GetDevicePixelRatio();
 			float x = qtPos.x() - main->previewX / scale;
 			float y = qtPos.y() - main->previewY / scale;
@@ -2091,7 +2092,7 @@ void OBSBasicPreview::DrawOverflow()
 		overflow = gs_texture_create_from_file(path.c_str());
 	}
 
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	OBSScene scene = main->GetCurrentScene();
 
@@ -2114,7 +2115,7 @@ void OBSBasicPreview::DrawSceneEditing()
 
 	GS_DEBUG_MARKER_BEGIN(GS_DEBUG_COLOR_DEFAULT, "DrawSceneEditing");
 
-	OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	OBSBasic *main = OBSBasic::Get();
 
 	gs_effect_t *solid = obs_get_base_effect(OBS_EFFECT_SOLID);
 	gs_technique_t *tech = gs_effect_get_technique(solid, "Solid");

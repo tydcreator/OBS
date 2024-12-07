@@ -3085,7 +3085,7 @@ void OBSBasic::AddScene(OBSSource source)
 	obs_hotkey_register_source(
 		source, "OBSBasic.SelectScene", Str("Basic.Hotkeys.SelectScene"),
 		[](void *data, obs_hotkey_id, obs_hotkey_t *, bool pressed) {
-			OBSBasic *main = reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+			OBSBasic *main = OBSBasic::Get();
 
 			auto potential_source = static_cast<obs_source_t *>(data);
 			OBSSourceAutoRelease source = obs_source_get_ref(potential_source);
@@ -7934,7 +7934,7 @@ void undo_redo(const std::string &data)
 {
 	OBSDataAutoRelease dat = obs_data_create_from_json(data.c_str());
 	OBSSourceAutoRelease source = obs_get_source_by_uuid(obs_data_get_string(dat, "scene_uuid"));
-	reinterpret_cast<OBSBasic *>(App()->GetMainWindow())->SetCurrentScene(source.Get(), true);
+	OBSBasic::Get()->SetCurrentScene(source.Get(), true);
 
 	obs_scene_load_transform_states(data.c_str());
 }
@@ -7942,13 +7942,13 @@ void undo_redo(const std::string &data)
 void OBSBasic::on_actionPasteTransform_triggered()
 {
 	OBSDataAutoRelease wrapper = obs_scene_save_transform_states(GetCurrentScene(), false);
-	auto func = [](obs_scene_t *, obs_sceneitem_t *item, void *data) {
+	auto func = [](obs_scene_t *, obs_sceneitem_t *item, void *) {
 		if (!obs_sceneitem_selected(item))
 			return true;
 		if (obs_sceneitem_locked(item))
 			return true;
 
-		OBSBasic *main = reinterpret_cast<OBSBasic *>(data);
+		OBSBasic *main = OBSBasic::Get();
 
 		obs_sceneitem_defer_update_begin(item);
 		obs_sceneitem_set_info2(item, &main->copiedTransformInfo);
@@ -7958,7 +7958,7 @@ void OBSBasic::on_actionPasteTransform_triggered()
 		return true;
 	};
 
-	obs_scene_enum_items(GetCurrentScene(), func, this);
+	obs_scene_enum_items(GetCurrentScene(), func, nullptr);
 
 	OBSDataAutoRelease rwrapper = obs_scene_save_transform_states(GetCurrentScene(), false);
 
@@ -9694,7 +9694,7 @@ void OBSBasic::RepairCustomExtraDockName()
 
 OBSBasic *OBSBasic::Get()
 {
-	return reinterpret_cast<OBSBasic *>(App()->GetMainWindow());
+	return qobject_cast<OBSBasic *>(App()->GetMainWindow());
 }
 
 bool OBSBasic::StreamingActive()
